@@ -24,12 +24,10 @@ def gather_single_logs(party1, party2):
         jsonResponse = result.json()
         print(result)
 
-        file_name = 'logs_with' + party2
+        file_name = 'logs_with' + party2 + '.txt'
 
         with open(file_name, 'w', encoding='utf-8') as f:
             json.dump(jsonResponse, f, ensure_ascii=False, indent=4)
-         #Reutrn salt score
-        # return jsonResponse["salt"]
     except:
         print("failed")
     
