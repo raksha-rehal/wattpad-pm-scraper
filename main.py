@@ -8,65 +8,68 @@ import html
 # username of both parties in a chat 
 # will be input into a text file by the program user
 # and processed from there. 
-def gather_single_logs(party1, party2):
+def gather_single_logs(username, password, all_users):
     try:
+        
         with sync_playwright() as p:
 
-            url = 'https://www.wattpad.com/api/v3/users/' + party1 + '/inbox/' + party2 + '?offset=0&limit=100'
             login = "https://wattpad.com/login"
 
-            ua = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64)" 
-                  "AppleWebKit/537.36 (KHTML, like Gecko)" 
-                  "Chrome/124.0.0.0 Safari/537.36"
-                )
-
             browser = p.chromium.launch(headless=False)
-            page = browser.new_page(user_agent=ua)
+            page = browser.new_page()
 
             page.goto(login)
             page.locator('"Log in"').click()
-            page.fill('input#login-username', 'rosienekochan')
-            page.fill('input#login-password', 'test')
-            page.locator('"Log in"').click()    
-            page.goto(url)
+            page.fill('input#login-username', username)
+            page.fill('input#login-password', password)
+            page.locator('"Log in"').click()
 
+            for party2 in all_users:
+                url = 'https://www.wattpad.com/api/v3/users/' + username + '/inbox/' + party2 + '?offset=0&limit=100'
+
+                page.goto(url)
+
+                flag = True
+                offset = 0
+                while flag:
+                    content = page.content()
+                    make_files(content, party2)
+
+                    if "nextUrl" not in content:
+                        flag = False
+
+                    else:
+                        offset += 100
+                        nextUrl = 'https://www.wattpad.com/api/v3/users/' + username + '/inbox/' + party2 + '?offset=' + str(offset) +'&limit=100'
+                        time.sleep(0.02)
+                        page.goto(nextUrl)
+            
             page.wait_for_timeout(1000)
 
-            flag = True
-            offset = 0
-            while flag:
-                content = page.content()
-                make_files(content, party2)
+        for party2 in all_users:
 
-                if "nextUrl" not in content:
-                    flag = False
+            file_name = 'saved_logs/logs_with_' + party2 + '.txt'
 
-                else:
-                    # idxStart = [idxStart.end() for idxStart in re.finditer('"nextUrl":"', content)]
-                    # idxEnd = [idxEnd.start() for idxEnd in re.finditer('"}', content)]
+            # read lines in an array called lines
+            f1 = open(file_name, "r")
+            line_list = f1.readlines()
+            line_list.reverse()
+            f1.close()
 
-                    # nextUrl = content[idxStart[0]:idxEnd[0]]
-                    # page.goto(nextUrl)
+            f2 = open(file_name, 'w')
+            f2.write('\n'.join(str(line) for line in line_list))
+            f2.close()
 
-                    offset += 100
-                    nextUrl = 'https://www.wattpad.com/api/v3/users/' + party1 + '/inbox/' + party2 + '?offset=' + str(offset) +'&limit=100'
-                    time.sleep(0.02)
-                    page.goto(nextUrl)
-
-            return True
+        return True
 
     except Exception as error:
         print(error)
 
 
-def make_files(content, name):
-        dump = open('html_dump.txt', 'w')
-        dump.write(content)
-        dump.close()
-        
+def make_files(content, name):        
         cleaned = clean_logs(content)
 
-        file_name = 'logs_with_' + name + '.txt'
+        file_name = 'saved_logs/logs_with_' + name + '.txt'
         file = open(file_name, 'a')
         file.write('\n'.join(str(line) for line in cleaned))
         file.close()
@@ -121,10 +124,12 @@ def main():
 
     parties = open("usernames.txt", "r")
     all_users = parties.read().splitlines()
-    username = all_users.pop(0)
+
+    auth = open("authentication.txt", "r")
+    userPass = auth.read().splitlines()
     
-    for party in all_users:
-        status = gather_single_logs(username, party)
+    # username, password, all users
+    status = gather_single_logs(userPass[0], userPass[1], all_users)
 
     if status:
         print('Logs saved!')
