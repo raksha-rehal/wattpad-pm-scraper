@@ -1,5 +1,6 @@
 # wattpad-pm-scraper  
 A way for users to obtain records of their Wattpad private message logs. Logs are saved in the "saved_logs" folder as .txt files.  
+Note: Since the closure of Wattpad's PM service, unfortunately this code is unable to gather logs as they are no longer publically available for users to access.  
   
 ## how to use
 1 - Select the "Code" button and then "Download ZIP".  
